@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Direct & Licensing Engine</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Top Navigation Header -->
+  <header class="top-nav">
+    <div class="nav-left">
+      <div class="brand-title">Apex Direct</div>
+      <div class="brand-badge" id="appBadge">ApexSecurity</div>
+    </div>
+    <div class="nav-right" id="userNavSection" style="display: none;">
+      <div class="user-info">
+        <span class="user-role-dot"></span>
+        <span id="navUsername">admin</span>
+      </div>
+      <button id="logoutBtn" class="btn-ghost">Sign Out</button>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- 1. AUTH GATEWAY (Displayed when NOT logged in) -->
+    <section class="auth-card" id="authSection">
+      <div class="auth-header">
+        <h2>Protected Distribution Portal</h2>
+        <p>Authentication required to upload binaries and manage system keys</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="tabLoginBtn">Sign In</button>
+        <button class="auth-tab-btn" id="tabRegisterBtn">Create Account</button>
+      </div>
+
+      <form id="authForm" class="auth-form">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="authUsername" class="app-input" placeholder="Enter username" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="authPassword" class="app-input" placeholder="Enter password" required autocomplete="current-password">
+        </div>
+        <button type="submit" id="authSubmitBtn" class="btn-primary w-100">Sign In</button>
+        <div id="authNotice" class="auth-notice" style="display: none;"></div>
+      </form>
+    </section>
+
+    <!-- 2. MAIN DASHBOARD (Displayed when LOGGED IN) -->
+    <section class="dashboard-wrapper" id="dashboardSection" style="display: none;">
+      <!-- Dashboard Sub-Navigation Tabs -->
+      <nav class="dash-nav">
+        <button class="dash-tab-btn active" data-tab="tabUpload">Upload Payload</button>
+        <button class="dash-tab-btn" data-tab="tabFiles">File Manager</button>
+        <button class="dash-tab-btn" data-tab="tabLicenses" id="navLicensesBtn">KeyAuth Licenses</button>
+        <button class="dash-tab-btn" data-tab="tabSettings">Settings</button>
+        <button class="dash-tab-btn" data-tab="tabApi">API Integration</button>
+      </nav>
+
+      <!-- TAB 1: UPLOAD PAYLOAD -->
+      <div class="dash-view" id="tabUpload">
+        <div class="view-header">
+          <h3>Binary Upload & Distribution</h3>
+          <p>Direct binary streaming with zero-name clean download URLs</p>
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+          <div class="drop-title">Select payload to deploy</div>
+          <div class="drop-subtitle">Support for .exe, .cpl, .dll, archives or <span class="browse-action">browse workstation</span></div>
+          <input type="file" id="fileInput">
+        </div>
+
+        <div class="progress-container" id="progressContainer">
+          <div class="progress-track">
+            <div class="progress-fill" id="progressBar"></div>
+          </div>
+          <div class="progress-meta">
+            <span id="statusText">Uploading...</span>
+            <span id="percentText">0%</span>
+          </div>
+        </div>
+
+        <div class="result-container" id="resultCard">
+          <div class="result-card">
+            <div class="result-header">
+              <span class="result-title">
+                <span class="status-dot"></span>
+                Direct link published (Clean Endpoint)
+              </span>
+              <span class="result-tag" id="fileMetaTag">Direct Stream</span>
+            </div>
+            <div class="link-box">
+              <input type="text" id="directLinkInput" class="link-input" readonly>
+              <button id="copyBtn" class="copy-btn">Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: FILE MANAGER -->
+      <div class="dash-view" id="tabFiles" style="display: none;">
+        <div class="view-header flex-between">
+          <div>
+            <h3>Hosted Payloads</h3>
+            <p>Manage stored files, monitor downloads, and copy direct endpoints</p>
+          </div>
+          <button id="refreshFilesBtn" class="btn-ghost">Refresh</button>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>File Name</th>
+                <th>Size</th>
+                <th>Owner</th>
+                <th>Downloads</th>
+                <th>Direct Stream URL</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="filesTableBody">
+              <tr><td colspan="6" class="text-center text-dim">Loading files...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 3: KEYAUTH LICENSES -->
+      <div class="dash-view" id="tabLicenses" style="display: none;">
+        <div class="view-header">
+          <h3>KeyAuth Licensing Engine</h3>
+          <p>Generate, manage, and monitor software authorization keys</p>
+        </div>
+
+        <div class="panel-box">
+          <div class="input-grid">
+            <div class="input-col">
+              <label>Prefix</label>
+              <input type="text" id="keyPrefix" value="APEX" class="app-input">
+            </div>
+            <div class="input-col">
+              <label>Duration (Days)</label>
+              <input type="number" id="keyDays" value="30" class="app-input" min="1">
+            </div>
+            <div class="input-col">
+              <label>Amount</label>
+              <input type="number" id="keyAmount" value="1" class="app-input" min="1" max="25">
+            </div>
+            <div class="input-col btn-align">
+              <button id="generateKeysBtn" class="btn-primary w-100">Generate Keys</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="view-header flex-between" style="margin-top: 24px;">
+          <h4>Active License Keys</h4>
+          <button id="refreshKeysBtn" class="btn-ghost">Refresh</button>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>License Key</th>
+                <th>Days</th>
+                <th>Status</th>
+                <th>HWID Lock</th>
+                <th>Expiration</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="keysTableBody">
+              <tr><td colspan="6" class="text-center text-dim">No keys generated</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 4: SETTINGS -->
+      <div class="dash-view" id="tabSettings" style="display: none;">
+        <div class="view-header">
+          <h3>System & Application Configuration</h3>
+          <p>Configure administrative credentials and KeyAuth application secrets</p>
+        </div>
+
+        <div class="panel-box" style="max-width: 540px;">
+          <form id="settingsForm">
+            <div class="form-group">
+              <label>Application Name</label>
+              <input type="text" id="setAppName" class="app-input" placeholder="ApexSecurity">
+            </div>
+            <div class="form-group">
+              <label>Application Secret Key</label>
+              <input type="text" id="setAppSecret" class="app-input" placeholder="apex_secret_key_999">
+            </div>
+            <div class="form-group">
+              <label>Change Administrator Password</label>
+              <input type="password" id="setNewPassword" class="app-input" placeholder="Leave empty to keep unchanged">
+            </div>
+            <button type="submit" class="btn-primary">Save Settings</button>
+            <div id="settingsNotice" class="auth-notice" style="display: none;"></div>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB 5: API INTEGRATION -->
+      <div class="dash-view" id="tabApi" style="display: none;">
+        <div class="view-header">
+          <h3>Client Integration Specification</h3>
+          <p>API endpoints for payload distribution and KeyAuth client authentication</p>
+        </div>
+
+        <div class="api-doc-card">
+          <h4>1. Direct Binary Streaming (Zero-Name Link)</h4>
+          <p class="text-dim">Streams the raw binary payload directly without exposing the original filename in the URL path:</p>
+          <pre class="code-box">GET https://&lt;domain&gt;/api/:token</pre>
+
+          <h4 style="margin-top: 20px;">2. KeyAuth v1.2 Protocol</h4>
+          <p class="text-dim">Standard KeyAuth request format compatible with C++, C#, Python, and CLI loaders:</p>
+          <pre class="code-box">
+// Initialize Session
+GET https://&lt;domain&gt;/api/1.2/?type=init&name=ApexSecurity&secret=apex_secret_key_999
+
+// Authenticate License Key + Hardware ID Lock
+GET https://&lt;domain&gt;/api/1.2/?type=license&key=APEX-XXXX-XXXX-XXXX&hwid=USER_HWID_STRING
+          </pre>
+
+          <h4 style="margin-top: 20px;">3. REST JSON License Verification</h4>
+          <pre class="code-box">
+POST https://&lt;domain&gt;/api/v1/license/verify
+Content-Type: application/json
+
+{
+  "key": "APEX-XXXX-XXXX-XXXX",
+  "hwid": "0123-4567-89AB-CDEF"
+}
+          </pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
